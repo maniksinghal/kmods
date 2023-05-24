@@ -9,6 +9,7 @@
 #include <linux/kdev_t.h>
 #include <linux/fs.h>
 #include <linux/device.h>
+#include <linux/cdev.h>
 
 
 /**
@@ -209,7 +210,7 @@ static ssize_t
 phc_read(struct file *file, char __user *buf, size_t len, loff_t *off)
 {
     pr_info("phc_driver: File read called!!\n");
-    return 0;
+    return len;
 }
 
 /**
@@ -219,7 +220,7 @@ static ssize_t
 phc_write(struct file *file, const char __user *buf, size_t len, loff_t *off)
 {
     pr_info("phc_driver: File write called!!\n");
-    return 0;
+    return len;
 }
 
 int
