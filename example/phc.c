@@ -22,9 +22,11 @@ int create_device_files(void);
 
 #define NUM_PHC_DEVICES  2
 static bool device_registered = false;
-static dev_t device = false;
+static dev_t device = 0;
 static struct class *dev_class = NULL;
 static bool device_files_created[NUM_PHC_DEVICES] = {false};
+static struct cdev phc_cdev;
+static bool cdev_added = false;
 
 
 /** Global variables which will/can serve as module parameters.
@@ -105,6 +107,11 @@ static void __exit phc_driver_exit(void)
             class_destroy(dev_class);
             dev_class = NULL;
         }
+
+        if (cdev_added) {
+            cdev_del(&phc_cdev);
+            cdev_added = false;
+        }
         (void)unregister_chrdev_region(device, NUM_PHC_DEVICES);
         device_registered = false;
     }
@@ -153,6 +160,68 @@ MODULE_VERSION("1:1.0");
  * File operation callbacks for our device
  */
 
+/** Device open callback. If not provided, then device-open call from 
+ * application is always successful */
+static int phc_open(struct inode *inode, struct file *file);
+
+/** Device close callback */
+static int phc_release(struct inode *inode, struct file *file);
+
+/** Device read */
+static ssize_t phc_read(struct file *file, char __user *buf, size_t len, loff_t *off);
+
+/** Device write */
+static ssize_t phc_write(struct file *file, const char *buf, size_t len, loff_t *off);
+
+static struct file_operations fops = 
+{
+    .owner  = THIS_MODULE,
+    .read   = phc_read,
+    .write  = phc_write,
+    .open   = phc_open,
+    .release = phc_release,
+};
+
+/**
+ * Device file open callback
+*/
+static int
+phc_open(struct inode *inode, struct file *file)
+{
+    pr_info("phc_driver: File open call!!\n");
+    return 0;
+}
+
+/**
+ * Device file close callback
+*/
+static int
+phc_release(struct inode *inode, struct file *file)
+{
+    pr_info("phc_driver: File release called !!\n");
+    return 0;
+}
+
+/**
+ * Device read callback
+*/
+static ssize_t
+phc_read(struct file *file, char __user *buf, size_t len, loff_t *off)
+{
+    pr_info("phc_driver: File read called!!\n");
+    return 0;
+}
+
+/**
+ * Device write callback
+*/
+static ssize_t
+phc_write(struct file *file, const char __user *buf, size_t len, loff_t *off)
+{
+    pr_info("phc_driver: File write called!!\n");
+    return 0;
+}
+
 int
 create_device_files()
 {
@@ -161,6 +230,7 @@ create_device_files()
     char device_name[] = "phcX";
     int dev_num_position = 0;
     dev_t tmp_dev = 0;
+    int res = 0;
 
     /** Create a device class, used below to create the device file */
     dev_class = class_create(THIS_MODULE, "phc_class");
@@ -169,6 +239,18 @@ create_device_files()
         return -1;
     }
     pr_info("phc_driver: Device class created successfully\n");
+
+    /** Create the cdev structure for attaching file 
+     * operations callbacks to the device */
+    cdev_init(&phc_cdev, &fops);
+    res = cdev_add(&phc_cdev, device, NUM_PHC_DEVICES);
+    if (res < 0) {
+        pr_err("phc_driver: Could not cdev_add the file operations to device");
+        class_destroy(dev_class);
+        dev_class = NULL;
+        return -1;
+    }
+    cdev_added = true;
 
     /* Now create the device */
     dev_num_position = sizeof(device_name) -2;
