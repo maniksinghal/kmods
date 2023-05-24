@@ -149,6 +149,10 @@ MODULE_AUTHOR("Manik Singhal");
 MODULE_DESCRIPTION("Hello world example driver");
 MODULE_VERSION("1:1.0");
 
+/**
+ * File operation callbacks for our device
+ */
+
 int
 create_device_files()
 {
