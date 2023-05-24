@@ -1,4 +1,4 @@
-obj-m += dr_example.o
+obj-m += phc.o
 
 #Disabling module signature
 #CONFIG_MODULE_SIG=n
