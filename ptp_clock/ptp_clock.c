@@ -18,10 +18,27 @@ long user_seconds = 0;
 
 int cl_debug = 0;  // flag to enable/disable debug
 
+static void
+reset_base_ts(void)
+{
+	base_ts = ktime_get();
+}
+
 static int myclock_adjfine(struct ptp_clock_info *info, long scaled_ppm)
 {
     /* Adjust clock frequency */
-    /* Implement your own logic here */
+	int sign = 1;  // positive by default
+	s64 ppb = 0;
+
+	if (scaled_ppm < 0) {
+		scaled_ppm = -scaled_ppm;
+		sign = -1;
+	}
+
+	ppb = (scaled_ppm >> 16) * 1000;
+	ppb_drift = ppb * sign;
+
+	reset_base_ts();
 
     return 0;
 }
@@ -109,7 +126,7 @@ static int __init myclock_init(void)
         return err;
     }
 
-	base_ts = ktime_get();
+	reset_base_ts();
     pr_info("PTP clock registered successfully\n");
     return 0;
 }
